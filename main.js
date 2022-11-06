@@ -1,6 +1,9 @@
 const { app, ipcMain, BrowserWindow } = require('electron')
-const AutoLaunch = require('auto-launch')
 const path = require('path')
+
+const appFolder = path.dirname(process.execPath)
+const updateExe = path.resolve(appFolder, '..', 'Update.exe')
+const exeName = path.basename(process.execPath)
 
 const createWindow = () => {
 	const win = new BrowserWindow({
@@ -15,14 +18,38 @@ const createWindow = () => {
 }
 
 app.whenReady().then(() => {
-	let autoLaunch = new AutoLaunch({
-		name: 'Your app name goes here',
-		path: app.getPath('exe')
-	})
+	// let autoLaunch = new AutoLaunch({
+	// 	name: 'Your app name goes here',
+	// 	path: app.getPath('exe')
+	// })
 
-	autoLaunch.isEnabled().then((isEnabled) => {
-		if (!isEnabled) autoLaunch.enable()
-	})
+	// autoLaunch.isEnabled().then((isEnabled) => {
+	// 	if (!isEnabled) autoLaunch.enable()
+	// })
+
+	const isDevelopment = process.env.NODE_ENV !== 'production'
+	if (isDevelopment === false) {
+		launchAtStartup()
+	}
+
+	function launchAtStartup() {
+		const config = {
+			openAtLogin: true,
+			openAsHidden: true
+		}
+
+		if (process.platform !== 'darwin') {
+			config.path = updateExe
+			config.args = [
+				'--processStart',
+				`"${exeName}"`,
+				'--process-start-args',
+				`"--hidden"`
+			]
+		}
+
+		app.setLoginItemSettings(config)
+	}
 
 	createWindow()
 	ipcMain.handle('ping', () => 'pong')
